@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RE6 ARC Studio</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand"><b>ARC</b><span>RE6 ARC Studio</span></div>
+    <nav class="tabs">
+      <button data-tab="browse" class="on" data-i="tab_browse"></button>
+      <button data-tab="repack"><span data-i="tab_repack"></span><span class="badge" id="tabBadge" hidden>0</span></button>
+    </nav>
+    <div class="spacer"></div>
+    <button class="btn" id="btnOpen"><svg class="i" data-icon="file"></svg><span data-i="open_arc"></span></button>
+    <button class="btn" id="btnOpenDir"><svg class="i" data-icon="folder"></svg><span data-i="open_folder"></span></button>
+    <button class="btn ghost icon" id="btnLang" title="Language"><svg class="i" data-icon="globe"></svg></button>
+    <button class="btn ghost icon" id="btnTheme" title="Theme"><svg class="i" data-icon="sun"></svg></button>
+  </header>
+
+  <div class="pending" id="pendingBar" hidden>
+    <span class="dot"></span><span id="pendingText"></span><span class="spacer"></span>
+    <button class="btn sm" id="pendingReview" data-i="review_save"></button>
+    <button class="btn sm ghost" id="pendingDiscard" data-i="discard_all"></button>
+  </div>
+
+  <main class="browse" id="viewBrowse">
+    <aside class="side" id="side">
+      <div class="side-head"><span data-i="archives"></span><span id="archCount"></span></div>
+      <div class="tree" id="tree"></div>
+    </aside>
+    <div class="resizer" id="resizer"></div>
+    <section class="center">
+      <div class="toolbar">
+        <div class="search">
+          <svg class="i" data-icon="search"></svg>
+          <input class="input" id="q" autocomplete="off" spellcheck="false" data-ph="search_ph">
+          <button class="btn ghost rx" id="rx" title="Regex">.*</button>
+        </div>
+        <select class="input" id="extSel"></select>
+        <label class="chk muted" title=""><input type="checkbox" id="recur"><span data-i="subdirs"></span></label>
+        <span class="spacer"></span>
+        <div class="seg" id="viewSeg">
+          <button data-view="details" title=""><svg class="i" data-icon="list"></svg><span data-i="v_details"></span></button>
+          <button data-view="tiles"><svg class="i" data-icon="grid"></svg><span data-i="v_tiles"></span></button>
+        </div>
+        <button class="btn" id="btnPrev" title=""><svg class="i" data-icon="panel"></svg></button>
+        <button class="btn primary" id="btnExtract"><svg class="i" data-icon="download"></svg><span id="extractLbl"></span></button>
+      </div>
+      <div class="crumb" id="crumb"></div>
+      <div class="list-head" id="listHead"></div>
+      <div class="scroller" id="scroller" tabindex="0">
+        <div class="spacer-h" id="spacer"><div class="inner" id="inner"></div></div>
+        <div class="empty" id="empty">
+          <div class="box">
+            <div class="big"><svg class="i" data-icon="box"></svg></div>
+            <h2 data-i="empty_title"></h2>
+            <div data-i="empty_desc"></div>
+            <div><button class="btn primary" id="emptyOpen"><svg class="i" data-icon="file"></svg><span data-i="open_arc"></span></button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <aside class="prev" id="prev"><div class="prev-body" id="prevBody"></div></aside>
+  </main>
+
+  <main class="repack" id="viewRepack" hidden><div class="repack-inner" id="repackInner"></div></main>
+
+  <footer class="status">
+    <span id="stFiles"></span><span id="stSel"></span><span class="sp"></span>
+    <span id="stTask" hidden><span id="stTaskLbl"></span> <span class="prog" style="display:inline-block;vertical-align:middle"><i id="stProg"></i></span></span>
+  </footer>
+</div>
+<div class="toasts" id="toasts"></div>
+<div class="drop" id="drop" hidden><span data-i="drop_hint"></span></div>
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
