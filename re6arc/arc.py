@@ -47,30 +47,178 @@ def type_hash_of(class_name: str) -> int:
     return (~zlib.crc32(class_name.encode("ascii"))) & 0x7FFFFFFF
 
 
-# extension -> MT Framework resource class name
-_EXT_CLASSES = {
-    "tex": "rTexture", "mod": "rModel", "mrl": "rMaterial", "lmt": "rMotionList",
-    "efl": "rEffectList", "ean": "rEffectAnim", "rtex": "rRenderTargetTexture",
-}
+# Resource classes of RE6 and the file extension the GAME uses for each (what sResource puts after the path when it
+# loads a loose file): extracted from BH6.exe (Steam build of 2025-08), slot +0x18 of each resource class vtable.
+# Columns: type hash (~crc32(class name) & 0x7FFFFFFF), class name, extension. Classes that occur in the retail
+# arcs come first; when several classes share an extension the first one wins for extension -> hash.
+_ENGINE_CLASSES = (
+    (0x241F5DEB, 'rTexture', 'tex'),
+    (0x6D5AE854, 'rEffectList', 'efl'),
+    (0x2749C8A8, 'rMaterial', 'mrl'),
+    (0x58A15856, 'rModel', 'mod'),
+    (0x66B45610, 'rAIFSM', 'fsm'),
+    (0x76820D81, 'rMotionList', 'lmt'),
+    (0x7E33A16C, 'rSoundPackage', 'spc'),
+    (0x1BCC4966, 'rSoundRequest', 'srq'),
+    (0x4C0DB839, 'rScheduler', 'sdl'),
+    (0x2D12E086, 'rSoundRandom', 'srd'),
+    (0x15302EF4, 'rLayout', 'lot'),
+    (0x4E397417, 'rEffectAnim', 'ean'),
+    (0x39C52040, 'rCameraList', 'lcm'),
+    (0x5FB399F4, 'rBioSoundSequenceSe', 'bssq'),
+    (0x167DBBFF, 'rSoundStreamRequest', 'stq'),
+    (0x54DC440A, 'rMotionSequenceList', 'msl'),
+    (0x1B520B68, 'rZone', 'zon'),
+    (0x7808EA10, 'rRenderTargetTexture', 'rtex'),
+    (0x6A9197ED, 'rSoundStreamStructure', 'sst'),
+    (0x6E45FABB, 'rAttackParam', 'atk'),
+    (0x296BD0A6, 'rHitGeometry', 'hgm'),
+    (0x12191BA1, 'rEffectProvider', 'epv'),
+    (0x4CA26828, 'rSoundMotionSe', 'mse'),
+    (0x276DE8B7, 'rEffect2D', 'e2d'),
+    (0x0253F147, 'rHit', 'hit'),
+    (0x65B275E5, 'rScenario', 'sce'),
+    (0x51FC779F, 'rCollision', 'sbc'),
+    (0x0A4280D9, 'rSoundHitData', 'shd'),
+    (0x535D969F, 'rCnsTinyChain', 'ctc'),
+    (0x266E8A91, 'rLinkUnit', 'lku'),
+    (0x2282360D, 'rJointEx', 'jex'),
+    (0x02358E1A, 'rShaderPackage', 'spkg'),
+    (0x272B80EA, 'rPropParam', 'prp'),
+    (0x4EF19843, 'rNavigationMesh', 'nav'),
+    (0x1FA8B594, 'rAreaHit', 'ahs'),
+    (0x671F21DA, 'rStartPos', 'stp'),
+    (0x242BB29A, 'rGUIMessage', 'gmd'),
+    (0x07437CCE, 'rSoundAttributeSe', 'ase'),
+    (0x039D71F2, 'rSoundReverbTable', 'rvt'),
+    (0x3B764DD4, 'rSoundStreamTransition', 'sstr'),
+    (0x5F36B659, 'rAIWayPoint', 'way'),
+    (0x2A4F96A8, 'rRigidBody', 'rbd'),
+    (0x1ED12F1B, 'rGoalPos', 'glp'),
+    (0x5802B3FF, 'rAHCamera', 'ahc'),
+    (0x285A13D9, 'rFxZone', 'vzo'),
+    (0x0026E7FF, 'rChainCol', 'ccl'),
+    (0x4B92D51A, 'rLightLinker', 'llk'),
+    (0x35BDD173, 'rPosAdjust', 'poa'),
+    (0x2C4666D1, 'rScrHiding', 'srh'),
+    (0x46FB08BA, 'rBioModelMontage', 'bmt'),
+    (0x6A5CDD23, 'rOccluder', 'occ'),
+    (0x4B768796, 'rSoundCondition', 'scn'),
+    (0x25B4A6B9, 'rSoundBGMControl', 'bgm'),
+    (0x45E867D7, 'rMotionListList', 'mll'),
+    (0x15155F8A, 'rSMHiding', 'smh'),
+    (0x02833703, 'rEffectStrip', 'efs'),
+    (0x5175C242, 'rGeometry2', 'geo2'),
+    (0x6FE1EA15, 'rSoundPhysicsList', 'spl'),
+    (0x1EB3767C, 'rSoundPhysicsRigidBody', 'spr'),
+    (0x33046CD5, 'rCameraQFPS', 'qcm'),
+    (0x257D2F7C, 'rSwingModel', 'swm'),
+    (0x622FA3C9, 'rAIWayPointExpand', 'ewy'),
+    (0x601E64CD, 'rSoundZoneSwitch', 'szs'),
+    (0x45F753E8, 'rInGameSound', 'igs'),
+    (0x0437BCF2, 'rGrassWind', 'grw'),
+    (0x1AADF7B7, 'rCameraMotionSdl', 'cms'),
+    (0x3B5C7FD3, 'rIdAnim', 'ida'),
+    (0x58819BC8, 'rSoundSmOcclusion', 'sso'),
+    (0x14EA8095, 'rCnsOffsetSet', 'cos'),
+    (0x54E2D1FF, 'rPadData', 'rpd'),
+    (0x2F4E7041, 'rSoundGunTool', 'sgt'),
+    (0x7D1530C2, 'rSoundSourceMusic', 'sngw'),
+    (0x4323D83A, 'rSceneTexture', 'stex'),
+    (0x25FA21CB, 'rAIWayPointGraph', 'gway'),
+    (0x31EDC625, 'rSoundPhysicsJoint', 'spj'),
+    (0x62A68441, 'rThinkTable', 'thk'),
+    (0x2D462600, 'rGUIFont', 'gfd'),
+    (0x30FC745F, 'rSoundSubMixer', 'smx'),
+    (0x538120DE, 'rSoundEngine', 'eng'),
+    (0x19F6EFCE, 'rSoundEnemyParam', 'sep'),
+    (0x52DBDCD6, 'rRagdoll', 'rdd'),
+    (0x46810940, 'rSoundEngineValue', 'egv'),
+    (0x628DFB41, 'rGrass2Setting', 'gr2s'),
+    (0x11C35522, 'rGrass2', 'gr2'),
+    (0x69A5C538, 'rDeformWeightMap', 'dwm'),
+    (0x49B5A885, 'rSoundSimpleCurve', 'ssc'),
+    (0x2C2DE8CA, 'rAdh', 'adh'),
+    (0x245133D9, 'rCameraRail', 'cmr'),
+    (0x22948394, 'rGUI', 'gui'),
+    (0x02A80E1F, 'rLinkRagdoll', 'lrd'),
+    (0x7BEC319A, 'rSoundPhysicsSoftBody', 'sps'),
+    (0x56CF93D4, 'rAINavigationMeshList', 'lnv'),
+    (0x07F768AF, 'rGUIIconInfo', 'gii'),
+    (0x2739B57C, 'rGrass', 'grs'),
+    (0x6BB4ED5E, 'rLch', 'lch'),
+    (0x4E2FEF36, 'rModelMontage', 'mtg'),
+    (0x0ECD7DF4, 'rSoundCurveSet', 'scs'),
+    (0x0315E81F, 'rSoundDirectionalSet', 'sds'),
+    (0x2B40AE8F, 'rSoundEQ', 'equ'),
+    (0x232E228C, 'rSoundReverb', 'rev'),
+    (0x358012E8, 'rVibration', 'vib'),
+    (0x31A91DA3, 'rAI', 'ais'),
+    (0x785E6622, 'rAIConditionTree', 'cdt'),
+    (0x7BBF5CB0, 'rAIDynamicLayout', 'dpth'),
+    (0x59EE2276, 'rAIFSMList', 'fsl'),
+    (0x31AB356C, 'rAIPathBase', 'are'),
+    (0x5400CD32, 'rAIPathBaseXml', 'are.xml'),
+    (0x3948DD0A, 'rAIPointEvaluaterList', 'pel'),
+    (0x476DCE81, 'rAIWayPointExpand::WayPoint', 'ewy_dummy.xml'),
+    (0x73850D05, 'rArchive', 'arc'),
+    (0x3E363245, 'rChain', 'chn'),
+    (0x3D683C5B, 'rCloud', 'cld'),
+    (0x4A06C178, 'rCnsJointOffset', 'jof'),
+    (0x526665B7, 'rCnsTinyIK', 'tik'),
+    (0x2350E584, 'rCollisionObj', 'obc'),
+    (0x1EF5E639, 'rConvexHull', 'hul'),
+    (0x75967AD6, 'rDynamicSbc', 'dsc'),
+    (0x07B8BCDE, 'rFacialAnimation', 'fca'),
+    (0x5E4DEF9D, 'rGeometry2Group', 'geog'),
+    (0x2672F2D4, 'rGeometry3', 'geo3'),
+    (0x6143E1BD, 'rGraphPatch', 'gpt'),
+    (0x3FF8D5FD, 'rHDDCacheSettingPS3', 'cst'),
+    (0x3CC3B1D9, 'rIdKeyItem', 'idk'),
+    (0x2FD6616E, 'rIni', 'ini'),
+    (0x748AA719, 'rJointExXml', 'jex.xml'),
+    (0x31F693D6, 'rMovieOnDisk', 'wmv'),
+    (0x71950384, 'rMovieOnDiskInterMediate', 'wmv'),
+    (0x5F84F7C4, 'rMovieOnMemory', 'mem.wmv'),
+    (0x17A69ACE, 'rMovieOnMemoryInterMediate', 'mem.wmv'),
+    (0x1BA81D3C, 'rNeck', 'nck'),
+    (0x18E5033D, 'rParamBase', 'prm'),
+    (0x0B52347D, 'rPlParam', 'plm'),
+    (0x09E6B5F0, 'rShader2', 'mfx'),
+    (0x7ED4C86C, 'rSoundEngineXml', 'eng.xml'),
+    (0x04878D6F, 'rSoundProvider', 'spv'),
+    (0x79C47B59, 'rSoundSourceADPCM', 'sew'),
+    (0x5CBAB342, 'rSoundSourceEnvironment', 'envw'),
+    (0x317AB4ED, 'rSoundSourceEnvironmentInterMediate', 'envw'),
+    (0x14324F60, 'rSoundSourceMusicInterMediate', 'sngw'),
+    (0x255D51CD, 'rSoundSourceOggVorbis', 'sngw'),
+    (0x04124E96, 'rSoundSourceSE', 'xsew'),
+    (0x39C73911, 'rSoundSourceSEInterMediate', 'xsew'),
+    (0x064A3AD8, 'rSoundSpeakerSetXml', 'sss.xml'),
+    (0x6E402C69, 'rSoundSubMixerXml', 'smx.xml'),
+    (0x14F8098C, 'rTextureChanger', 'txc'),
+    (0x46E786DE, 'rTextureChangerList', 'tcl'),
+    (0x7E442559, 'rWth', 'wth'),
+    (0x5531DE9F, 'uSoundSubMixer', 'smx'),
+    (0x5A11B83A, 'uSoundSubMixer::CurrentSubMixer', 'smx'),
+)
 
-# hashes whose class names were not derived from a name, taken from known RE6 archives
-_EXTRA_EXTS = {
-    0x0026E7FF: "ccl", 0x0437BCF2: "grw", 0x07437CCE: "base", 0x0A4280D9: "shd",
-    0x12191BA1: "epv", 0x15302EF4: "lot", 0x1BCC4966: "srq", 0x2282360D: "jex",
-    0x272B80EA: "prp", 0x296BD0A6: "hgm", 0x2D12E086: "srd", 0x39C52040: "lcm",
-    0x4C0DB839: "sdl", 0x4CA26828: "mse", 0x4EF19843: "nav", 0x535D969F: "ctc",
-    0x65B275E5: "sce", 0x66B45610: "fsm", 0x6E45FABB: "atk", 0x7E33A16C: "spc",
-}
-
-HASH_TO_EXT: dict[int, str] = {type_hash_of(c): e for e, c in _EXT_CLASSES.items()}
-HASH_TO_EXT.update(_EXTRA_EXTS)
-EXT_TO_HASH: dict[str, int] = {e: h for h, e in HASH_TO_EXT.items()}
+HASH_TO_EXT: dict[int, str] = {h: e for h, _c, e in _ENGINE_CLASSES}
+CLASS_NAMES: dict[int, str] = {h: c for h, c, _e in _ENGINE_CLASSES}
+EXT_TO_HASH: dict[str, int] = {}
+for _h, _c, _e in _ENGINE_CLASSES:
+    EXT_TO_HASH.setdefault(_e.lower(), _h)
 
 _HEX_EXT = re.compile(r"^[0-9a-f]{8}$")
 
 
 def ext_of(type_hash: int) -> str:
     return HASH_TO_EXT.get(type_hash, f"{type_hash:08x}")
+
+
+def class_of(type_hash: int) -> str:
+    """resource class name of a type hash ('' when it is not known)"""
+    return CLASS_NAMES.get(type_hash, "")
 
 
 def hash_of_ext(ext: str) -> int:

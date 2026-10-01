@@ -42,7 +42,11 @@ build.bat        # 输出 dist\RE6-ARC-Studio.exe（约 32 MB，无控制台窗�
 ...  零填充到 0x8000 对齐，随后是紧密连续的 zlib 流
 ```
 
-类型哈希 = `~crc32(资源类名) & 0x7FFFFFFF`（如 `rTexture` → `tex`）。少数未知哈希会以 8 位十六进制作为扩展名显示，并原样写回。
+类型哈希 = `~crc32(资源类名) & 0x7FFFFFFF`（如 `rTexture` → `tex`）。档案里只存哈希；类名和扩展名用的是**游戏自己的**：
+从 BH6.exe 里每个资源类的 DTI 和虚表提取（虚表 +0x18 返回的就是引擎读松散文件时用的扩展名），对应表见 `re6arc/arc.py` 的 `_ENGINE_CLASSES`。
+零售档案里出现的 101 种类型全都有名字，例如 `rLinkUnit` → `lku`、`rBioSoundSequenceSe` → `bssq`。
+所以解包出来的文件可以直接给 [RE6 Sideloader](https://github.com/Dimcirui/RE6-SideLoader) 侧载。
+表里没有的哈希会以 8 位十六进制作为扩展名显示，并原样写回。
 
 DDS 写回限制：像素格式必须与原 TEX 一致（DXT1 / DXT5 / BGRA8）；尺寸与 mip 数可以不同；不支持立方体贴图。
 

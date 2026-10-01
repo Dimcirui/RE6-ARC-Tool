@@ -113,8 +113,25 @@ class Hashes(unittest.TestCase):
         self.assertEqual(arc.hash_of_ext("mod"), 0x58A15856)
         self.assertEqual(arc.hash_of_ext("lmt"), 0x76820D81)
         self.assertEqual(arc.ext_of(0x7808EA10), "rtex")
-        self.assertEqual(arc.ext_of(0x4323D83A), "4323d83a")
-        self.assertEqual(arc.hash_of_ext("4323d83a"), 0x4323D83A)
+        # the game's own names (BH6.exe), not guesses
+        self.assertEqual(arc.ext_of(0x5FB399F4), "bssq")              # rBioSoundSequenceSe
+        self.assertEqual(arc.hash_of_ext("lku"), 0x266E8A91)          # rLinkUnit
+        self.assertEqual(arc.hash_of_ext("sst"), 0x6A9197ED)          # rSoundStreamStructure
+        self.assertEqual(arc.hash_of_ext("sstr"), 0x3B764DD4)         # rSoundStreamTransition
+        self.assertEqual(arc.ext_of(0x12345678), "12345678")          # an unknown hash stays hexadecimal
+        self.assertEqual(arc.hash_of_ext("5fb399f4"), 0x5FB399F4)
+
+    def test_class_table_is_consistent(self):
+        shared = {}
+        for h, cls, ext in arc._ENGINE_CLASSES:
+            self.assertEqual(arc.type_hash_of(cls), h, cls)
+            self.assertEqual(arc.class_of(h), cls)
+            shared.setdefault(ext.lower(), []).append(h)
+        for ext, hs in shared.items():
+            self.assertEqual(arc.hash_of_ext(ext), hs[0], ext)
+        # only sound / movie intermediate classes (never in arcs) share an extension with another class
+        self.assertEqual({e for e, hs in shared.items() if len(hs) > 1},
+                         {"smx", "mem.wmv", "wmv", "sngw", "envw", "xsew"})
 
     def test_safe_join_rejects_traversal(self):
         with tempfile.TemporaryDirectory() as td:
